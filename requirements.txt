@@ -6,3 +6,4 @@ langchain-google-genai
 sentence-transformers
 chromadb
 pypdf
+sentencepiece
