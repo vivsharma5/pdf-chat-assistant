@@ -13,6 +13,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
 
 # --- 1. CONFIGURATION & SETUP ---
 st.set_page_config(page_title="LLM Guide Assistant", page_icon="🤖")
@@ -52,7 +53,16 @@ def prepare_vector_db():
 vector_db = prepare_vector_db()
 
 # --- 3. THE LOGIC (RAG Chain) ---
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash", 
+    temperature=0.3,
+    safety_settings={
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    }
+)
 template = """Answer strictly based on the context provided. 
 If the answer isn't there, say "NOT_FOUND".
 
