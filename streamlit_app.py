@@ -88,48 +88,60 @@ def get_answer(query):
     return chain.invoke(query), docs_with_scores
 
 # --- 4. THE INTERFACE ---
+# --- 4. THE INTERFACE ---
 
-# Function to create a GitHub Issue
+# 1. Define the clear function at the top of this section
+def clear_text():
+    st.session_state["user_query"] = ""
+
+# 2. Setup the text input with a KEY
+# The 'key' connects this box to the clear_text function
+query = st.text_input(
+    "What would you like to know from the guide?", 
+    key="user_query", 
+    placeholder="e.g., What is an LLM?"
+)
+
+# Function to create a GitHub Issue (remains the same)
 def log_to_github(query, user_msg):
-    # YOUR REPO: vivsharma5/pdf-assistant
     repo = "vivsharma5/pdf-assistant"
     token = st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo}/issues"
-    
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
-    
     data = {
         "title": f"New Inquiry: {query[:30]}...",
         "body": f"**Question asked:** {query}\n\n**User Message:** {user_msg}"
     }
-    
     response = requests.post(url, headers=headers, json=data)
     return response.status_code == 201
 
-# --- UPDATED INTERFACE ---
-query = st.text_input("What would you like to know from the guide?")
-
+# --- LOGIC ---
 if query:
     try:
         with st.spinner("Searching..."):
             answer, sources = get_answer(query)
             
-            if answer == "NOT_FOUND":
+            if answer == "NOT_FOUND" or "NOT_FOUND" in answer:
                 st.warning("I couldn't find that in the guide.")
                 col1, col2 = st.columns(2)
                 with col1:
                     with st.popover("📩 Notify Vivek"):
                         u_msg = st.text_area("Message:")
-                        if st.button("Send to GitHub"):
+                        # Using a unique key for the form button too
+                        if st.button("Send to GitHub", key="github_btn"):
                             if log_to_github(query, u_msg):
                                 st.success("Logged to GitHub Issues!")
                 with col2:
-                    if st.button("🔄 Ask Another"):
-                        st.rerun()
+                    # UPDATED: We use on_click to trigger the clear function
+                    st.button("🔄 Ask Another", on_click=clear_text)
             else:
-                st.write(answer)
+                st.markdown(f"### Answer\n{answer}")
+                
+                # Also adding an "Ask Another" here so they can clear after a success
+                st.button("➕ Ask New Question", on_click=clear_text)
+                
     except Exception as e:
         st.error("The AI is having a moment. Please check your API key or safety settings.")
