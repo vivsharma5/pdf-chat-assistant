@@ -26,7 +26,7 @@ def prepare_vector_db():
     pdf_path = "compact-guide-to-large-language-models.pdf"
     persist_dir = "./chroma_db"
     
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cpu'})
     
     # If DB doesn't exist locally, create it
     if not os.path.exists(persist_dir):
