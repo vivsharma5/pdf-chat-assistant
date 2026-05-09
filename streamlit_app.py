@@ -62,11 +62,10 @@ prompt = ChatPromptTemplate.from_template(template)
 retriever = vector_db.as_retriever(search_kwargs={"k": 5})
 
 def get_answer(query):
-    # Get matches to check similarity
-    docs_with_scores = vector_db.similarity_search_with_score(query, k=3)
+    docs_with_scores = vector_db.similarity_search_with_score(query, k=5)
     
-    # If the match is too weak (distance is too high), trigger customer service
-    if not docs_with_scores or docs_with_scores[0][1] > 0.6:
+    # Change 0.6 to 1.0 (Chroma distance: higher is more lenient)
+    if not docs_with_scores or docs_with_scores[0][1] > 1.0:
         return "NOT_FOUND", []
     
     chain = (
@@ -78,22 +77,25 @@ def get_answer(query):
     return chain.invoke(query), docs_with_scores
 
 # --- 4. THE INTERFACE ---
-query = st.text_input("What would you like to know from the guide?")
-
 if query:
-    with st.spinner("Searching the guide..."):
+    with st.spinner("Searching..."):
         answer, sources = get_answer(query)
         
-        if answer == "NOT_FOUND":
-            st.warning("I couldn't find that in the guide. Would you like to contact Vivek?")
-            with st.form("contact_form"):
-                msg = st.text_area("Your message:")
-                if st.form_submit_button("Send to Customer Service"):
-                    # For now, we print to console. 
-                    # In a real app, you'd use smtplib here!
-                    st.success("Thanks! Vivek has been notified.")
+        if answer == "NOT_FOUND" or "NOT_FOUND" in answer:
+            st.warning("I couldn't find a direct match in the guide.")
+            
+            # Create two columns for the buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                with st.expander("✉️ Contact Vivek"):
+                    with st.form("service_form"):
+                        msg = st.text_area("Your message:")
+                        if st.form_submit_button("Submit"):
+                            st.success("Sent!")
+            with col2:
+                # This button just refreshes the page to clear the state
+                if st.button("🔄 Ask Another Question"):
+                    st.rerun()
         else:
             st.markdown(f"### Answer\n{answer}")
-            st.markdown("### Sources")
-            for doc, score in sources:
-                st.caption(f"- Page {doc.metadata.get('page')}: {doc.page_content[:100]}...")
+            # Show sources...
