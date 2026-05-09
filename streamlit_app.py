@@ -143,7 +143,7 @@ if query:
                         # Wrapping in a form ensures the 'u_msg' is sent correctly
                         with st.form("github_form"):
                             u_msg = st.text_area("Your message:")
-                            submit_github = st.form_submit_button("Send to GitHub")
+                            submit_github = st.form_submit_button("Send to Vivek")
                             
                             if submit_github:
                                 if u_msg:
