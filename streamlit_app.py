@@ -78,54 +78,48 @@ def get_answer(query):
     return chain.invoke(query), docs_with_scores
 
 # --- 4. THE INTERFACE ---
-import requests # Add this to the top of your file with other imports
 
 # Function to create a GitHub Issue
-def log_question_to_github(user_msg, original_query):
-    repo = "vivsharma5/pdf-assistant" # Use your actual username/repo name
+def log_to_github(query, user_msg):
+    # YOUR REPO: vivsharma5/pdf-assistant
+    repo = "vivsharma5/pdf-assistant"
     token = st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo}/issues"
     
-    header = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-    data = {
-        "title": f"New Inquiry: {original_query[:30]}...",
-        "body": f"**User Question:** {original_query}\n\n**Message for Vivek:** {user_msg}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
     }
     
-    response = requests.post(url, headers=header, json=data)
+    data = {
+        "title": f"New Inquiry: {query[:30]}...",
+        "body": f"**Question asked:** {query}\n\n**User Message:** {user_msg}"
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
     return response.status_code == 201
 
-# --- 4. THE INTERFACE ---
-# FIXED: We define 'query' here before using it!
-query = st.text_input("What would you like to know from the guide?", placeholder="e.g., What is an LLM?")
+# --- UPDATED INTERFACE ---
+query = st.text_input("What would you like to know from the guide?")
 
 if query:
-    with st.spinner("Searching..."):
-        answer, sources = get_answer(query)
-        
-        if answer == "NOT_FOUND" or "NOT_FOUND" in answer:
-            st.warning("I couldn't find a direct match in the guide.")
+    try:
+        with st.spinner("Searching..."):
+            answer, sources = get_answer(query)
             
-            col1, col2 = st.columns(2)
-            with col1:
-                with st.expander("✉️ Notify Vivek"):
-                    with st.form("service_form"):
-                        msg = st.text_area("Leave a message for Vivek:")
-                        if st.form_submit_button("Submit"):
-                            # This sends the data to your GitHub Issues
-                            if log_question_to_github(msg, query):
-                                st.success("Vivek has been notified via GitHub!")
-                            else:
-                                st.error("Failed to log. Please try again.")
-            with col2:
-                if st.button("🔄 Ask Another Question"):
-                    st.rerun()
-        else:
-            st.markdown(f"### Answer\n{answer}")
-            st.markdown("---")
-            st.markdown("**Sources:**")
-            for doc, score in sources:
-                st.caption(f"📍 Page {doc.metadata.get('page')}: {doc.page_content[:150]}...")
-            
-            if st.button("Ask New Question"):
-                st.rerun()
+            if answer == "NOT_FOUND":
+                st.warning("I couldn't find that in the guide.")
+                col1, col2 = st.columns(2)
+                with col1:
+                    with st.popover("📩 Notify Vivek"):
+                        u_msg = st.text_area("Message:")
+                        if st.button("Send to GitHub"):
+                            if log_to_github(query, u_msg):
+                                st.success("Logged to GitHub Issues!")
+                with col2:
+                    if st.button("🔄 Ask Another"):
+                        st.rerun()
+            else:
+                st.write(answer)
+    except Exception as e:
+        st.error("The AI is having a moment. Please check your API key or safety settings.")
