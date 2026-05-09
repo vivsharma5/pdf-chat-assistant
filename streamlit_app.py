@@ -102,21 +102,31 @@ query = st.text_input(
     placeholder="e.g., What is an LLM?"
 )
 
-# Function to create a GitHub Issue (remains the same)
+# --- 4. THE INTERFACE ---
+
+# Function to create a GitHub Issue with Error Reporting
 def log_to_github(query, user_msg):
     repo = "vivsharma5/pdf-assistant"
     token = st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo}/issues"
+    
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
+    
     data = {
-        "title": f"New Inquiry: {query[:30]}...",
-        "body": f"**Question asked:** {query}\n\n**User Message:** {user_msg}"
+        "title": f"Inquiry: {query[:30]}...",
+        "body": f"**Question:** {query}\n\n**User Message:** {user_msg}"
     }
+    
     response = requests.post(url, headers=headers, json=data)
-    return response.status_code == 201
+    
+    # This will show you EXACTLY why it fails (e.g., 401 or 404)
+    if response.status_code != 201:
+        st.error(f"GitHub Error {response.status_code}: {response.text}")
+        return False
+    return True
 
 # --- LOGIC ---
 if query:
@@ -127,21 +137,25 @@ if query:
             if answer == "NOT_FOUND" or "NOT_FOUND" in answer:
                 st.warning("I couldn't find that in the guide.")
                 col1, col2 = st.columns(2)
+                
                 with col1:
                     with st.popover("📩 Notify Vivek"):
-                        u_msg = st.text_area("Message:")
-                        # Using a unique key for the form button too
-                        if st.button("Send to GitHub", key="github_btn"):
-                            if log_to_github(query, u_msg):
-                                st.success("Logged to GitHub Issues!")
+                        # Wrapping in a form ensures the 'u_msg' is sent correctly
+                        with st.form("github_form"):
+                            u_msg = st.text_area("Your message:")
+                            submit_github = st.form_submit_button("Send to GitHub")
+                            
+                            if submit_github:
+                                if u_msg:
+                                    if log_to_github(query, u_msg):
+                                        st.success("✅ Logged to GitHub Issues!")
+                                else:
+                                    st.warning("Please type a message first.")
                 with col2:
-                    # UPDATED: We use on_click to trigger the clear function
                     st.button("🔄 Ask Another", on_click=clear_text)
             else:
                 st.markdown(f"### Answer\n{answer}")
-                
-                # Also adding an "Ask Another" here so they can clear after a success
                 st.button("➕ Ask New Question", on_click=clear_text)
                 
     except Exception as e:
-        st.error("The AI is having a moment. Please check your API key or safety settings.")
+        st.error(f"The AI is having a moment: {str(e)[:100]}")I key or safety settings.")
