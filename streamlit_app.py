@@ -158,4 +158,6 @@ if query:
                 st.button("➕ Ask New Question", on_click=clear_text)
                 
     except Exception as e:
-        st.error(f"The AI is having a moment: {str(e)[:100]}")I key or safety settings.")
+        # This is the line we just fixed:
+        st.error(f"The AI is having a moment: {str(e)[:100]}")
+        st.info("Please check your Google API key or safety settings in the dashboard.")
