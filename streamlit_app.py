@@ -106,7 +106,7 @@ query = st.text_input(
 
 # Function to create a GitHub Issue with Error Reporting
 def log_to_github(query, user_msg):
-    repo = "vivsharma5/pdf-assistant"
+    repo = "vivsharma5/pdf-chat-assistant"
     token = st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo}/issues"
     
